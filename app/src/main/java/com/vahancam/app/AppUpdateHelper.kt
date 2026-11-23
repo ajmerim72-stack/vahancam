@@ -26,7 +26,7 @@ import java.util.concurrent.Executors
 
 object AppUpdateHelper {
 
-    private const val DEFAULT_UPDATE_URL = "http://192.168.0.110:8080/VahanCam.apk"
+    private const val DEFAULT_UPDATE_URL = "https://github.com/ajmerim72-stack/vahancam/releases/latest/download/VahanCam.apk"
     private const val PREFS_NAME = "vahancam_prefs"
     private const val KEY_CUSTOM_UPDATE_URL = "custom_update_url"
 
