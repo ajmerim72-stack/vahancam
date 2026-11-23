@@ -18,6 +18,52 @@ object ImageProcessor {
     private const val TARGET_MAX_BYTES = 950 * 1024L // 950 KB strictly under 1000 KB portal limit
 
     /**
+     * Stitches Front and Back photos of a document (e.g., RC or Aadhaar)
+     * into a single vertical collage (Front on top, Back on bottom).
+     */
+    fun createTwoSidedCollage(frontBitmap: Bitmap, backBitmap: Bitmap): Bitmap {
+        // Normalize both to same width
+        val targetWidth = max(frontBitmap.width, backBitmap.width)
+
+        val scaledFront = if (frontBitmap.width != targetWidth) {
+            val h = (frontBitmap.height * (targetWidth.toFloat() / frontBitmap.width)).toInt()
+            Bitmap.createScaledBitmap(frontBitmap, targetWidth, h, true)
+        } else {
+            frontBitmap
+        }
+
+        val scaledBack = if (backBitmap.width != targetWidth) {
+            val h = (backBitmap.height * (targetWidth.toFloat() / backBitmap.width)).toInt()
+            Bitmap.createScaledBitmap(backBitmap, targetWidth, h, true)
+        } else {
+            backBitmap
+        }
+
+        val dividerHeight = 14
+        val totalHeight = scaledFront.height + scaledBack.height + dividerHeight
+
+        val collage = Bitmap.createBitmap(targetWidth, totalHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(collage)
+        canvas.drawColor(Color.WHITE)
+
+        // Draw Front at top
+        canvas.drawBitmap(scaledFront, 0f, 0f, null)
+
+        // Draw subtle divider
+        val dividerPaint = Paint().apply {
+            color = Color.parseColor("#94A3B8")
+            strokeWidth = 3f
+        }
+        val dividerY = scaledFront.height + dividerHeight / 2f
+        canvas.drawLine(20f, dividerY, (targetWidth - 20).toFloat(), dividerY, dividerPaint)
+
+        // Draw Back at bottom
+        canvas.drawBitmap(scaledBack, 0f, (scaledFront.height + dividerHeight).toFloat(), null)
+
+        return collage
+    }
+
+    /**
      * Crops bitmap to exact 3:4 aspect ratio (centered) to match the viewfinder box.
      */
     fun cropTo3x4(source: Bitmap): Bitmap {
@@ -178,9 +224,10 @@ object ImageProcessor {
      */
     fun compressUnderLimit(
         bitmap: Bitmap,
-        targetMaxBytes: Long = TARGET_MAX_BYTES
+        targetMaxBytes: Long = TARGET_MAX_BYTES,
+        maxDim: Int = MAX_DIMENSION
     ): ByteArray {
-        var currentBitmap = resizeProportional(bitmap, MAX_DIMENSION)
+        var currentBitmap = resizeProportional(bitmap, maxDim)
         val qualitySteps = intArrayOf(90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40)
 
         // Pass 1: Try compression qualities on 1600px image

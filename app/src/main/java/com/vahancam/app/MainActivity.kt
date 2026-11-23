@@ -10,6 +10,7 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -89,6 +90,25 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvBannerDesc: TextView
     private lateinit var btnCapture: ImageButton
 
+    // Document Capture Modes (RC / Aadhaar 2-Sided Collage)
+    enum class DocumentMode { SINGLE_PAGE, TWO_SIDED_RC }
+    enum class TwoSidedStep { FRONT, BACK }
+    private var currentDocMode = DocumentMode.SINGLE_PAGE
+    private var twoSidedStep = TwoSidedStep.FRONT
+    private var frontSideBitmap: Bitmap? = null
+
+    // Two-Sided UI & Update Alert Views
+    private lateinit var bannerUpdateAvailable: LinearLayout
+    private lateinit var tvUpdateAvailableMsg: TextView
+    private lateinit var btnQuickUpdate: Button
+    private lateinit var modeSelectorContainer: LinearLayout
+    private lateinit var btnModeSingle: TextView
+    private lateinit var btnModeTwoSided: TextView
+    private lateinit var stepBannerTwoSided: LinearLayout
+    private lateinit var ivStepFrontThumb: ImageView
+    private lateinit var tvStepInstruction: TextView
+    private lateinit var btnResetCollage: Button
+
     // Preview & Edit Views
     private lateinit var previewOverlay: View
     private lateinit var imagePreview: ImageView
@@ -161,6 +181,18 @@ class MainActivity : AppCompatActivity() {
         detectLaunchIntent()
         setupListeners()
 
+        // Create update notification channel & check background updates
+        AppUpdateHelper.createNotificationChannel(this)
+        if (intent?.getBooleanExtra("trigger_update_dialog", false) == true) {
+            AppUpdateHelper.showUpdateDialog(this)
+        }
+        AppUpdateHelper.checkForUpdates(this) { hasUpdate, latestTag, _ ->
+            if (hasUpdate) {
+                bannerUpdateAvailable.visibility = View.VISIBLE
+                tvUpdateAvailableMsg.text = "🚀 New Update $latestTag Available! Tap to install."
+            }
+        }
+
         // Initialize First Browser Tab
         createNewTab(PARIVAHAN_HOMEPAGE_URL)
 
@@ -184,6 +216,16 @@ class MainActivity : AppCompatActivity() {
         btnBannerShareApp = findViewById(R.id.btnBannerShareApp)
         tvBannerTitle = findViewById(R.id.tvBannerTitle)
         tvBannerDesc = findViewById(R.id.tvBannerDesc)
+        bannerUpdateAvailable = findViewById(R.id.bannerUpdateAvailable)
+        tvUpdateAvailableMsg = findViewById(R.id.tvUpdateAvailableMsg)
+        btnQuickUpdate = findViewById(R.id.btnQuickUpdate)
+        modeSelectorContainer = findViewById(R.id.modeSelectorContainer)
+        btnModeSingle = findViewById(R.id.btnModeSingle)
+        btnModeTwoSided = findViewById(R.id.btnModeTwoSided)
+        stepBannerTwoSided = findViewById(R.id.stepBannerTwoSided)
+        ivStepFrontThumb = findViewById(R.id.ivStepFrontThumb)
+        tvStepInstruction = findViewById(R.id.tvStepInstruction)
+        btnResetCollage = findViewById(R.id.btnResetCollage)
         btnCapture = findViewById(R.id.btnCapture)
 
         previewOverlay = findViewById(R.id.previewOverlay)
@@ -259,6 +301,14 @@ class MainActivity : AppCompatActivity() {
         btnUpdateApp.setOnClickListener {
             AppUpdateHelper.showUpdateDialog(this)
         }
+        btnQuickUpdate.setOnClickListener {
+            AppUpdateHelper.showUpdateDialog(this)
+        }
+
+        // Document Capture Mode Selector (Single Page vs RC/Aadhaar 2-Side Collage)
+        btnModeSingle.setOnClickListener { setDocumentMode(DocumentMode.SINGLE_PAGE) }
+        btnModeTwoSided.setOnClickListener { setDocumentMode(DocumentMode.TWO_SIDED_RC) }
+        btnResetCollage.setOnClickListener { resetCollageState() }
 
         // Share App APK Button
         btnShareApp.setOnClickListener {
@@ -375,6 +425,43 @@ class MainActivity : AppCompatActivity() {
                 false
             }
         }
+    }
+
+    private fun setDocumentMode(mode: DocumentMode) {
+        currentDocMode = mode
+        resetCollageState()
+
+        if (mode == DocumentMode.SINGLE_PAGE) {
+            btnModeSingle.setBackgroundResource(R.drawable.bg_pill_button)
+            btnModeSingle.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2563EB"))
+            btnModeSingle.setTextColor(Color.WHITE)
+
+            btnModeTwoSided.background = null
+            btnModeTwoSided.setTextColor(Color.parseColor("#94A3B8"))
+
+            stepBannerTwoSided.visibility = View.GONE
+        } else {
+            btnModeTwoSided.setBackgroundResource(R.drawable.bg_pill_button)
+            btnModeTwoSided.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#2563EB"))
+            btnModeTwoSided.setTextColor(Color.WHITE)
+
+            btnModeSingle.background = null
+            btnModeSingle.setTextColor(Color.parseColor("#94A3B8"))
+
+            stepBannerTwoSided.visibility = View.VISIBLE
+            tvStepInstruction.text = "📸 Step 1: Click FRONT Side (Aage ki photo)"
+            tvStepInstruction.setTextColor(Color.parseColor("#38BDF8"))
+        }
+    }
+
+    private fun resetCollageState() {
+        twoSidedStep = TwoSidedStep.FRONT
+        frontSideBitmap = null
+        ivStepFrontThumb.setImageBitmap(null)
+        ivStepFrontThumb.visibility = View.GONE
+        btnResetCollage.visibility = View.GONE
+        tvStepInstruction.text = "📸 Step 1: Click FRONT Side (Aage ki photo)"
+        tvStepInstruction.setTextColor(Color.parseColor("#38BDF8"))
     }
 
     private fun getActiveTab(): BrowserTab? {
@@ -792,6 +879,55 @@ class MainActivity : AppCompatActivity() {
 
                     val oriented = ImageProcessor.rotateBitmap(rawBitmap, rotationDegrees)
                     val cropped3x4 = ImageProcessor.cropTo3x4(oriented)
+
+                    // 2-Sided Capture Flow (RC / Aadhaar Front & Back)
+                    if (currentDocMode == DocumentMode.TWO_SIDED_RC) {
+                        if (twoSidedStep == TwoSidedStep.FRONT) {
+                            frontSideBitmap = cropped3x4
+                            twoSidedStep = TwoSidedStep.BACK
+
+                            runOnUiThread {
+                                progressOverlay.visibility = View.GONE
+                                ivStepFrontThumb.setImageBitmap(frontSideBitmap)
+                                ivStepFrontThumb.visibility = View.VISIBLE
+                                btnResetCollage.visibility = View.VISIBLE
+                                tvStepInstruction.text = "📸 Step 2: Click BACK Side (Peeche ki photo)"
+                                tvStepInstruction.setTextColor(Color.parseColor("#34D399"))
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Front side captured! Now flip card & snap Back side.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            return
+                        } else {
+                            // Step 2: Combine Front + Back into vertical collage
+                            val front = frontSideBitmap ?: cropped3x4
+                            val back = cropped3x4
+                            val collage = ImageProcessor.createTwoSidedCollage(front, back)
+                            val scaledOriginal = ImageProcessor.resizeProportional(collage, 1800)
+                            val docClear = ImageProcessor.applyDocClearFilter(scaledOriginal, applySharpen = false)
+
+                            runOnUiThread {
+                                capturedOriginalBitmap = scaledOriginal
+                                previewDocClearBitmap = docClear
+                                isDocClearActive = true
+
+                                resetCollageState()
+                                updateFilterUI()
+                                imagePreview.setImageBitmap(previewDocClearBitmap)
+
+                                val counter = StorageHelper.getCurrentCounter(this@MainActivity)
+                                etFileName.setText(counter.toString())
+
+                                progressOverlay.visibility = View.GONE
+                                previewOverlay.visibility = View.VISIBLE
+                            }
+                            return
+                        }
+                    }
+
+                    // Single Page Normal Capture
                     val scaledOriginal = ImageProcessor.resizeProportional(cropped3x4, 1600)
                     val docClear = ImageProcessor.applyDocClearFilter(scaledOriginal, applySharpen = false)
 
@@ -844,6 +980,7 @@ class MainActivity : AppCompatActivity() {
         previewOverlay.visibility = View.GONE
         capturedOriginalBitmap = null
         previewDocClearBitmap = null
+        resetCollageState()
     }
 
     private fun confirmAndProcessPhoto() {
@@ -865,7 +1002,8 @@ class MainActivity : AppCompatActivity() {
                     original
                 }
 
-                val compressedBytes = ImageProcessor.compressUnderLimit(finalProcessedBitmap)
+                val maxDim = if (currentDocMode == DocumentMode.TWO_SIDED_RC) 1800 else 1600
+                val compressedBytes = ImageProcessor.compressUnderLimit(finalProcessedBitmap, maxDim = maxDim)
                 val targetFile = StorageHelper.getTargetCacheFile(this, cleanFilename)
                 StorageHelper.writeBytesToFile(targetFile, compressedBytes)
 

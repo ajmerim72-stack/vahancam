@@ -2,6 +2,9 @@ package com.vahancam.app
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -16,7 +19,10 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -27,11 +33,134 @@ import java.util.concurrent.Executors
 object AppUpdateHelper {
 
     private const val DEFAULT_UPDATE_URL = "https://github.com/ajmerim72-stack/vahancam/releases/latest/download/VahanCam.apk"
+    private const val GITHUB_API_LATEST_RELEASE = "https://api.github.com/repos/ajmerim72-stack/vahancam/releases/latest"
+    private const val NOTIFICATION_CHANNEL_ID = "vahancam_updates_channel"
+    private const val NOTIFICATION_ID = 2001
     private const val PREFS_NAME = "vahancam_prefs"
     private const val KEY_CUSTOM_UPDATE_URL = "custom_update_url"
 
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    fun createNotificationChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "VahanCam App Updates"
+            val descriptionText = "Notifications when a new version of VahanCam is available"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    /**
+     * Checks GitHub API asynchronously for newer releases.
+     * Triggers notification and callback if update is available.
+     */
+    fun checkForUpdates(
+        activity: Activity,
+        onResult: (hasUpdate: Boolean, latestTag: String, apkUrl: String) -> Unit
+    ) {
+        executor.execute {
+            try {
+                val url = URL(GITHUB_API_LATEST_RELEASE)
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 6000
+                    readTimeout = 6000
+                    setRequestProperty("User-Agent", "VahanCam-App")
+                    setRequestProperty("Accept", "application/vnd.github.v3+json")
+                }
+
+                if (connection.responseCode != 200) {
+                    mainHandler.post { onResult(false, "", "") }
+                    return@execute
+                }
+
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(response)
+                val tagName = json.optString("tag_name", "").trim()
+
+                var downloadUrl = DEFAULT_UPDATE_URL
+                val assets = json.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val asset = assets.getJSONObject(i)
+                        val name = asset.optString("name", "")
+                        if (name.endsWith(".apk", ignoreCase = true)) {
+                            downloadUrl = asset.optString("browser_download_url", DEFAULT_UPDATE_URL)
+                            break
+                        }
+                    }
+                }
+
+                val currentVersion = try {
+                    activity.packageManager.getPackageInfo(activity.packageName, 0).versionName ?: "1.3.0"
+                } catch (e: Exception) { "1.3.0" }
+
+                val hasUpdate = isNewerVersion(currentVersion, tagName)
+
+                mainHandler.post {
+                    if (hasUpdate) {
+                        sendUpdateNotification(activity, tagName)
+                    }
+                    onResult(hasUpdate, tagName, downloadUrl)
+                }
+
+            } catch (e: Exception) {
+                mainHandler.post { onResult(false, "", "") }
+            }
+        }
+    }
+
+    private fun isNewerVersion(current: String, latest: String): Boolean {
+        if (latest.isEmpty()) return false
+        val cleanCurrent = current.removePrefix("v").removePrefix("V").trim()
+        val cleanLatest = latest.removePrefix("v").removePrefix("V").trim()
+        if (cleanCurrent == cleanLatest) return false
+
+        val currentParts = cleanCurrent.split(".").mapNotNull { it.toIntOrNull() }
+        val latestParts = cleanLatest.split(".").mapNotNull { it.toIntOrNull() }
+
+        val length = maxOf(currentParts.size, latestParts.size)
+        for (i in 0 until length) {
+            val c = if (i < currentParts.size) currentParts[i] else 0
+            val l = if (i < latestParts.size) latestParts[i] else 0
+            if (l > c) return true
+            if (l < c) return false
+        }
+        return false
+    }
+
+    private fun sendUpdateNotification(context: Context, newVersion: String) {
+        try {
+            createNotificationChannel(context)
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("trigger_update_dialog", true)
+            }
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
+
+            val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_system_update)
+                .setContentTitle("🚀 VahanCam Update $newVersion Available!")
+                .setContentText("A new version is ready. Tap to download and install now.")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+
+            val notificationManager = NotificationManagerCompat.from(context)
+            notificationManager.notify(NOTIFICATION_ID, builder.build())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     fun getSavedUpdateUrl(context: Context): String {
         val saved = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
