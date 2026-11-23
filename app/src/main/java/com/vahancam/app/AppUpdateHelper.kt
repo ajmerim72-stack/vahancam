@@ -34,8 +34,12 @@ object AppUpdateHelper {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     fun getSavedUpdateUrl(context: Context): String {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_CUSTOM_UPDATE_URL, DEFAULT_UPDATE_URL) ?: DEFAULT_UPDATE_URL
+        val saved = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_CUSTOM_UPDATE_URL, null)
+        if (saved.isNullOrEmpty() || saved.contains("192.168.0.110")) {
+            return DEFAULT_UPDATE_URL
+        }
+        return saved
     }
 
     fun setSavedUpdateUrl(context: Context, url: String) {
@@ -52,11 +56,17 @@ object AppUpdateHelper {
         val currentUrl = getSavedUpdateUrl(activity)
 
         val dialogView = LayoutInflater.from(activity).inflate(R.layout.dialog_update_app, null)
+        val tvDesc = dialogView.findViewById<TextView>(R.id.tvUpdateDesc)
         val etUrl = dialogView.findViewById<EditText>(R.id.etUpdateUrl)
         val tvStatus = dialogView.findViewById<TextView>(R.id.tvUpdateStatus)
         val progressBar = dialogView.findViewById<ProgressBar>(R.id.pbUpdateDownload)
         val btnStart = dialogView.findViewById<Button>(R.id.btnStartUpdate)
         val btnCancel = dialogView.findViewById<Button>(R.id.btnCancelUpdate)
+
+        val versionName = try {
+            activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
+        } catch (e: Exception) { "1.3.0" }
+        tvDesc.text = "Current Version: $versionName\nDownload and install latest update directly online from GitHub Releases."
 
         etUrl.setText(currentUrl)
 

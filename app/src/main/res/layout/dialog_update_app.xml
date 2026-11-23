@@ -31,9 +31,10 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/tvUpdateDesc"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Current Version: 1.1.0\nDownload and install latest update directly over Wi-Fi without manual transfer."
+        android:text="Current Version: 1.3.0\nDownload and install latest update directly online from GitHub Releases."
         android:textColor="#94A3B8"
         android:textSize="12sp"
         android:layout_marginBottom="12dp" />
