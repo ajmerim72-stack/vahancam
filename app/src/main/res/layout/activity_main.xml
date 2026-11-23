@@ -1,0 +1,782 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <!-- ============================================== -->
+    <!-- CAMERA SCREEN WITH 3:4 VIEWFINDER BOX          -->
+    <!-- ============================================== -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cameraOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Top Bar -->
+        <LinearLayout
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="14dp"
+            android:paddingTop="36dp"
+            android:paddingBottom="10dp"
+            android:background="#99000000"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:id="@+id/tvAppTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VahanCam"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Mode Badge -->
+            <TextView
+                android:id="@+id/tvModeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Camera"
+                android:textColor="#34D399"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:background="@drawable/bg_pill_button"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Parivahan Portal Button -->
+            <Button
+                android:id="@+id/btnOpenPortal"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="🌐 Portal"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:backgroundTint="#2563EB"
+                app:cornerRadius="19dp"
+                android:paddingHorizontal="12dp"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Share App Button -->
+            <ImageButton
+                android:id="@+id/btnShareApp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_pill_button"
+                android:src="@drawable/ic_share"
+                android:contentDescription="Share App"
+                app:tint="#60A5FA"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Update App Button -->
+            <ImageButton
+                android:id="@+id/btnUpdateApp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_pill_button"
+                android:src="@drawable/ic_system_update"
+                android:contentDescription="Update App"
+                app:tint="#10B981"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Flash Toggle Button -->
+            <ImageButton
+                android:id="@+id/btnFlash"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_pill_button"
+                android:src="@drawable/ic_flash_auto"
+                android:contentDescription="Flash Toggle"
+                app:tint="@color/white" />
+        </LinearLayout>
+
+        <!-- Standalone Info Banner -->
+        <LinearLayout
+            android:id="@+id/bannerStandalone"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="4dp"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="@drawable/bg_pill_button"
+            android:visibility="gone"
+            tools:visibility="visible"
+            app:layout_constraintTop_toBottomOf="@id/topBar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:id="@+id/tvBannerTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● Ready for Document Uploads"
+                android:textColor="#10B981"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="2dp">
+
+                <TextView
+                    android:id="@+id/tvBannerDesc"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Tap '🌐 Portal' to open Parivahan. Tap 'Share' to send APK."
+                    android:textColor="#D1D5DB"
+                    android:textSize="11sp" />
+
+                <Button
+                    android:id="@+id/btnBannerShareApp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:text="📤 Share APK"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#3B82F6"
+                    app:cornerRadius="15dp"
+                    android:paddingHorizontal="10dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 3:4 DEDICATED VIEWFINDER CONTAINER -->
+        <FrameLayout
+            android:id="@+id/viewFinderContainer"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginVertical="6dp"
+            android:background="@color/black"
+            app:layout_constraintDimensionRatio="3:4"
+            app:layout_constraintTop_toBottomOf="@id/bannerStandalone"
+            app:layout_constraintBottom_toTopOf="@id/bottomCaptureArea"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Camera Preview View restricted to 3:4 -->
+            <androidx.camera.view.PreviewView
+                android:id="@+id/viewFinder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Document Scanner Frame Guide with 4 Corner Markers -->
+            <FrameLayout
+                android:id="@+id/framingGuide"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_doc_frame">
+
+                <!-- Top-Left Corner -->
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="top|start"
+                    android:src="@drawable/ic_scanner_corner"
+                    android:layout_margin="2dp" />
+
+                <!-- Top-Right Corner -->
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="top|end"
+                    android:rotation="90"
+                    android:src="@drawable/ic_scanner_corner"
+                    android:layout_margin="2dp" />
+
+                <!-- Bottom-Right Corner -->
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="bottom|end"
+                    android:rotation="180"
+                    android:src="@drawable/ic_scanner_corner"
+                    android:layout_margin="2dp" />
+
+                <!-- Bottom-Left Corner -->
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="bottom|start"
+                    android:rotation="270"
+                    android:src="@drawable/ic_scanner_corner"
+                    android:layout_margin="2dp" />
+
+                <!-- Tap-To-Focus Indicator Ring -->
+                <ImageView
+                    android:id="@+id/focusRing"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:src="@drawable/bg_focus_ring"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <!-- Helper badge inside 3:4 box -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="8dp"
+                    android:text="3:4 Document Box"
+                    android:textColor="#CCFFFFFF"
+                    android:textSize="11sp"
+                    android:background="@drawable/bg_pill_button"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp" />
+            </FrameLayout>
+
+        </FrameLayout>
+
+        <!-- Bottom Shutter / Capture Area -->
+        <LinearLayout
+            android:id="@+id/bottomCaptureArea"
+            android:layout_width="match_parent"
+            android:layout_height="96dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="#99000000"
+            android:paddingBottom="12dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageButton
+                android:id="@+id/btnCapture"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@drawable/bg_capture_button"
+                android:contentDescription="Take Photo" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ============================================== -->
+    <!-- QUICK PREVIEW SCREEN (After Photo Capture)     -->
+    <!-- ============================================== -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/previewOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/black"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Top Preview Bar with Filter Toggle -->
+        <LinearLayout
+            android:id="@+id/topPreviewBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="36dp"
+            android:paddingBottom="8dp"
+            android:background="#99000000"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Filter Toggle Button -->
+            <LinearLayout
+                android:id="@+id/btnToggleFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_pill_button"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/ivMagicIcon"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_magic"
+                    app:tint="#10B981"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
+                    android:id="@+id/tvFilterStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/doc_clear_enabled"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Preview Image matching 3:4 Box -->
+        <FrameLayout
+            android:id="@+id/previewImageContainer"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginVertical="6dp"
+            app:layout_constraintDimensionRatio="3:4"
+            app:layout_constraintTop_toBottomOf="@id/topPreviewBar"
+            app:layout_constraintBottom_toTopOf="@id/renameContainer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:id="@+id/imagePreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:contentDescription="Photo Preview" />
+        </FrameLayout>
+
+        <!-- ON-PAGE RENAME ROW (User Requested Feature) -->
+        <LinearLayout
+            android:id="@+id/renameContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="4dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            android:background="@drawable/bg_pill_button"
+            app:layout_constraintBottom_toTopOf="@id/galleryRow"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_edit"
+                app:tint="#10B981"
+                android:layout_marginEnd="6dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Name:"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="6dp" />
+
+            <!-- Stepper Minus -->
+            <ImageButton
+                android:id="@+id/btnStepMinus"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_pill_button"
+                android:src="@drawable/ic_minus"
+                app:tint="@color/white"
+                android:contentDescription="Decrement Number" />
+
+            <!-- Editable On-Page Name Box -->
+            <EditText
+                android:id="@+id/etFileName"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="6dp"
+                android:background="@drawable/bg_edit_text"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:text="1"
+                android:inputType="textVisiblePassword"
+                android:singleLine="true" />
+
+            <!-- Stepper Plus -->
+            <ImageButton
+                android:id="@+id/btnStepPlus"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_pill_button"
+                android:src="@drawable/ic_plus"
+                app:tint="@color/white"
+                android:contentDescription="Increment Number" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=".jpg"
+                android:textColor="#9CA3AF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <!-- SAVE TO GALLERY ROW (User Requested Feature) -->
+        <LinearLayout
+            android:id="@+id/galleryRow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="6dp"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="4dp"
+            app:layout_constraintBottom_toTopOf="@id/bottomActionArea"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_gallery"
+                app:tint="#60A5FA"
+                android:layout_marginEnd="6dp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Save copy in Gallery (Pictures/VahanCam)"
+                android:textColor="#D1D5DB"
+                android:textSize="12sp" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchSaveGallery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+        </LinearLayout>
+
+        <!-- Bottom Action Bar (Retake vs OK) -->
+        <LinearLayout
+            android:id="@+id/bottomActionArea"
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingHorizontal="20dp"
+            android:background="#99000000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Retake Button -->
+            <Button
+                android:id="@+id/btnRetake"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="10dp"
+                android:text="@string/retake"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:backgroundTint="#374151"
+                app:cornerRadius="24dp" />
+
+            <!-- Use Photo (OK) Button -->
+            <Button
+                android:id="@+id/btnUsePhoto"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="@string/use_photo"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:backgroundTint="#059669"
+                app:cornerRadius="24dp" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ============================================== -->
+    <!-- PARIVAHAN IN-APP BROWSER (Direct Upload Mode)  -->
+    <!-- ============================================== -->
+    <LinearLayout
+        android:id="@+id/portalContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#0F172A"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <!-- Top Browser Navigation Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1E293B"
+            android:paddingTop="36dp"
+            android:paddingHorizontal="8dp"
+            android:paddingBottom="6dp">
+
+            <!-- Control Row 1: Camera switch, Navigation, Home, Reload, Reset, New Page -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Back to Camera Button -->
+                <Button
+                    android:id="@+id/btnPortalBackToCam"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="📷 Camera"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#059669"
+                    app:cornerRadius="18dp"
+                    android:paddingHorizontal="10dp"
+                    android:layout_marginEnd="6dp" />
+
+                <!-- Browser Back -->
+                <ImageButton
+                    android:id="@+id/btnBrowserBack"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_arrow_back"
+                    android:contentDescription="Back"
+                    app:tint="@color/white"
+                    android:layout_marginEnd="4dp" />
+
+                <!-- Browser Forward -->
+                <ImageButton
+                    android:id="@+id/btnBrowserForward"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_arrow_forward"
+                    android:contentDescription="Forward"
+                    app:tint="@color/white"
+                    android:layout_marginEnd="4dp" />
+
+                <!-- Browser Reload -->
+                <ImageButton
+                    android:id="@+id/btnBrowserReload"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_refresh"
+                    android:contentDescription="Reload"
+                    app:tint="@color/white"
+                    android:layout_marginEnd="4dp" />
+
+                <!-- Browser Home -->
+                <ImageButton
+                    android:id="@+id/btnBrowserHome"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_home"
+                    android:contentDescription="Home"
+                    app:tint="@color/white"
+                    android:layout_marginEnd="4dp" />
+
+                <!-- Browser Reset Session (User Requested) -->
+                <Button
+                    android:id="@+id/btnBrowserReset"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:text="🧹 Reset"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#DC2626"
+                    app:cornerRadius="17dp"
+                    android:paddingHorizontal="8dp"
+                    android:layout_marginEnd="4dp" />
+
+                <!-- New Page / Tab (User Requested) -->
+                <Button
+                    android:id="@+id/btnBrowserNewTab"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:text="+ Page"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#2563EB"
+                    app:cornerRadius="17dp"
+                    android:paddingHorizontal="8dp" />
+
+                <!-- Share App in Browser -->
+                <ImageButton
+                    android:id="@+id/btnBrowserShare"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_share"
+                    android:contentDescription="Share App APK"
+                    app:tint="#60A5FA"
+                    android:layout_marginStart="4dp" />
+            </LinearLayout>
+
+            <!-- Control Row 2: Editable URL bar with Go button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="38dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
+
+                <EditText
+                    android:id="@+id/etBrowserUrl"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_edit_text"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="10dp"
+                    android:singleLine="true"
+                    android:imeOptions="actionGo"
+                    android:inputType="textUri"
+                    android:hint="https://vahan.parivahan.gov.in/..."
+                    android:textColorHint="#64748B" />
+
+                <Button
+                    android:id="@+id/btnBrowserGo"
+                    android:layout_width="54dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="6dp"
+                    android:text="Go"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#10B981"
+                    app:cornerRadius="10dp"
+                    android:padding="0dp" />
+            </LinearLayout>
+
+            <!-- Control Row 3: Horizontal Tab Strip -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginTop="6dp">
+
+                <LinearLayout
+                    android:id="@+id/tabStripContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical" />
+            </HorizontalScrollView>
+
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/pbPortalLoading"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:progressTint="#10B981"
+            android:visibility="gone" />
+
+        <!-- WebView Container (holds active tab's WebView) -->
+        <FrameLayout
+            android:id="@+id/webViewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <!-- ============================================== -->
+    <!-- PROGRESS OVERLAY                               -->
+    <!-- ============================================== -->
+    <LinearLayout
+        android:id="@+id/progressOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#CC000000"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:indeterminateTint="#10B981" />
+
+        <TextView
+            android:id="@+id/tvProgressMsg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/processing"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+    <!-- ============================================== -->
+    <!-- PERMISSION OVERLAY                             -->
+    <!-- ============================================== -->
+    <LinearLayout
+        android:id="@+id/permissionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#F0000000"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_camera"
+            app:tint="@color/primary"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Camera Permission Required"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/camera_permission_required"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp" />
+
+        <Button
+            android:id="@+id/btnGrantPermission"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/grant_permission"
+            android:backgroundTint="@color/primary"
+            app:cornerRadius="24dp" />
+    </LinearLayout>
+
+</FrameLayout>

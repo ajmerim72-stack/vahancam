@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">VahanCam</string>
+    <string name="doc_clear_enabled">Doc Clear (Magic) ON</string>
+    <string name="doc_clear_disabled">Original Photo</string>
+    <string name="filter_toggle">Doc Clear (Magic)</string>
+    <string name="retake">Retake</string>
+    <string name="use_photo">Use Photo (OK)</string>
+    <string name="processing">Enhancing &amp; Compressing...</string>
+    <string name="browser_ready_title">VahanCam is Ready</string>
+    <string name="browser_ready_desc">When uploading documents on Parivahan, Sarathi, or any browser, choose VahanCam to auto-enhance and compress below 950 KB.</string>
+    <string name="test_camera_button">Test Camera</string>
+    <string name="camera_permission_required">Camera permission is required to capture documents.</string>
+    <string name="grant_permission">Grant Permission</string>
+</resources>

@@ -1,0 +1,1 @@
+# VahanCam ProGuard Rules
