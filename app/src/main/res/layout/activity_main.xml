@@ -15,91 +15,111 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Top Bar -->
-        <LinearLayout
+        <!-- Top Bar with Pinned Flash on Extreme Right -->
+        <RelativeLayout
             android:id="@+id/topBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="14dp"
+            android:paddingHorizontal="12dp"
             android:paddingTop="36dp"
-            android:paddingBottom="10dp"
+            android:paddingBottom="8dp"
             android:background="#99000000"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <TextView
-                android:id="@+id/tvAppTitle"
+            <!-- Left Group: Title + Badge + Portal -->
+            <LinearLayout
+                android:id="@+id/topBarLeftGroup"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="VahanCam"
-                android:textColor="@color/white"
-                android:textSize="17sp"
-                android:textStyle="bold"
-                android:layout_marginEnd="8dp" />
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_toStartOf="@id/topBarRightGroup"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <!-- Mode Badge -->
-            <TextView
-                android:id="@+id/tvModeBadge"
+                <TextView
+                    android:id="@+id/tvAppTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VahanCam"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="6dp" />
+
+                <!-- Mode Badge -->
+                <TextView
+                    android:id="@+id/tvModeBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Camera"
+                    android:textColor="#34D399"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:layout_marginEnd="6dp" />
+
+                <!-- Parivahan Portal Button -->
+                <Button
+                    android:id="@+id/btnOpenPortal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:text="🌐 Portal"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#2563EB"
+                    app:cornerRadius="17dp"
+                    android:paddingHorizontal="10dp" />
+            </LinearLayout>
+
+            <!-- Right Group: Share + Update + FLASH (Pinned to Far Right) -->
+            <LinearLayout
+                android:id="@+id/topBarRightGroup"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Camera"
-                android:textColor="#34D399"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="3dp"
-                android:background="@drawable/bg_pill_button"
-                android:layout_marginEnd="8dp" />
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <!-- Parivahan Portal Button -->
-            <Button
-                android:id="@+id/btnOpenPortal"
-                android:layout_width="wrap_content"
-                android:layout_height="38dp"
-                android:text="🌐 Portal"
-                android:textColor="@color/white"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:backgroundTint="#2563EB"
-                app:cornerRadius="19dp"
-                android:paddingHorizontal="12dp"
-                android:layout_marginEnd="8dp" />
+                <!-- Share App Button -->
+                <ImageButton
+                    android:id="@+id/btnShareApp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_share"
+                    android:contentDescription="Share App"
+                    app:tint="#60A5FA"
+                    android:layout_marginEnd="6dp" />
 
-            <!-- Share App Button -->
-            <ImageButton
-                android:id="@+id/btnShareApp"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:background="@drawable/bg_pill_button"
-                android:src="@drawable/ic_share"
-                android:contentDescription="Share App"
-                app:tint="#60A5FA"
-                android:layout_marginEnd="8dp" />
+                <!-- Update App Button -->
+                <ImageButton
+                    android:id="@+id/btnUpdateApp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_system_update"
+                    android:contentDescription="Update App"
+                    app:tint="#10B981"
+                    android:layout_marginEnd="6dp" />
 
-            <!-- Update App Button -->
-            <ImageButton
-                android:id="@+id/btnUpdateApp"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:background="@drawable/bg_pill_button"
-                android:src="@drawable/ic_system_update"
-                android:contentDescription="Update App"
-                app:tint="#10B981"
-                android:layout_marginEnd="8dp" />
-
-            <!-- Flash Toggle Button -->
-            <ImageButton
-                android:id="@+id/btnFlash"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:background="@drawable/bg_pill_button"
-                android:src="@drawable/ic_flash_auto"
-                android:contentDescription="Flash Toggle"
-                app:tint="@color/white" />
-        </LinearLayout>
+                <!-- Flash Toggle Button (Permanently Pinned on the Extreme Right) -->
+                <ImageButton
+                    android:id="@+id/btnFlash"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:src="@drawable/ic_flash_auto"
+                    android:contentDescription="Flash Toggle"
+                    app:tint="@color/white" />
+            </LinearLayout>
+        </RelativeLayout>
 
         <!-- In-App Update Available Banner (Push/Alert) -->
         <LinearLayout
@@ -407,14 +427,14 @@
         android:visibility="gone"
         tools:visibility="gone">
 
-        <!-- Top Preview Bar with Filter Toggle -->
+        <!-- Top Preview Bar with Filter Toggle & Crop Button -->
         <LinearLayout
             android:id="@+id/topPreviewBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="14dp"
             android:paddingTop="36dp"
             android:paddingBottom="8dp"
             android:background="#99000000"
@@ -422,23 +442,24 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent">
 
-            <!-- Filter Toggle Button -->
+            <!-- Filter Toggle Button (Cycles: Shadow Clear -> Color Clear -> Original) -->
             <LinearLayout
                 android:id="@+id/btnToggleFilter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:gravity="center"
                 android:background="@drawable/bg_pill_button"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"
+                android:paddingHorizontal="10dp"
+                android:layout_marginEnd="8dp"
                 android:clickable="true"
                 android:focusable="true">
 
                 <ImageView
                     android:id="@+id/ivMagicIcon"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:src="@drawable/ic_magic"
                     app:tint="#10B981"
                     android:layout_marginEnd="6dp" />
@@ -447,11 +468,24 @@
                     android:id="@+id/tvFilterStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/doc_clear_enabled"
+                    android:text="Shadow Clear 🪄"
                     android:textColor="@color/white"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <!-- On-Page Crop Button -->
+            <Button
+                android:id="@+id/btnOpenCrop"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="✂️ Crop"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:backgroundTint="#2563EB"
+                app:cornerRadius="19dp"
+                android:paddingHorizontal="14dp" />
         </LinearLayout>
 
         <!-- Preview Image matching 3:4 Box -->
@@ -473,6 +507,13 @@
                 android:layout_height="match_parent"
                 android:scaleType="fitCenter"
                 android:contentDescription="Photo Preview" />
+
+            <!-- Interactive On-Page Crop View -->
+            <com.vahancam.app.DocumentCropView
+                android:id="@+id/cropView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
         </FrameLayout>
 
         <!-- ON-PAGE RENAME ROW (User Requested Feature) -->
@@ -629,6 +670,47 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:backgroundTint="#059669"
+                app:cornerRadius="24dp" />
+        </LinearLayout>
+
+        <!-- CROP ACTION BAR (Visible only during on-page crop mode) -->
+        <LinearLayout
+            android:id="@+id/cropActionArea"
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingHorizontal="20dp"
+            android:background="#99000000"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <Button
+                android:id="@+id/btnCancelCrop"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="10dp"
+                android:text="Cancel Crop"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:backgroundTint="#475569"
+                app:cornerRadius="24dp" />
+
+            <Button
+                android:id="@+id/btnApplyCrop"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="Apply Crop ✓"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:backgroundTint="#2563EB"
                 app:cornerRadius="24dp" />
         </LinearLayout>
 

@@ -109,12 +109,24 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvStepInstruction: TextView
     private lateinit var btnResetCollage: Button
 
+    // Filter Modes (Shadow Clear vs Color Clear vs Original)
+    enum class FilterMode { SHADOW_CLEAR, COLOR_CLEAR, ORIGINAL }
+    private var currentFilterMode = FilterMode.SHADOW_CLEAR
+
     // Preview & Edit Views
     private lateinit var previewOverlay: View
     private lateinit var imagePreview: ImageView
     private lateinit var btnToggleFilter: LinearLayout
     private lateinit var ivMagicIcon: ImageView
     private lateinit var tvFilterStatus: TextView
+    private lateinit var btnOpenCrop: Button
+    private lateinit var cropView: DocumentCropView
+    private lateinit var cropActionArea: LinearLayout
+    private lateinit var btnCancelCrop: Button
+    private lateinit var btnApplyCrop: Button
+    private lateinit var renameContainer: LinearLayout
+    private lateinit var galleryRow: LinearLayout
+    private lateinit var bottomActionArea: LinearLayout
     private lateinit var etFileName: EditText
     private lateinit var btnStepMinus: ImageButton
     private lateinit var btnStepPlus: ImageButton
@@ -171,7 +183,6 @@ class MainActivity : AppCompatActivity() {
     // Bitmaps for quick preview
     private var capturedOriginalBitmap: Bitmap? = null
     private var previewDocClearBitmap: Bitmap? = null
-    private var isDocClearActive = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -233,6 +244,14 @@ class MainActivity : AppCompatActivity() {
         btnToggleFilter = findViewById(R.id.btnToggleFilter)
         ivMagicIcon = findViewById(R.id.ivMagicIcon)
         tvFilterStatus = findViewById(R.id.tvFilterStatus)
+        btnOpenCrop = findViewById(R.id.btnOpenCrop)
+        cropView = findViewById(R.id.cropView)
+        cropActionArea = findViewById(R.id.cropActionArea)
+        btnCancelCrop = findViewById(R.id.btnCancelCrop)
+        btnApplyCrop = findViewById(R.id.btnApplyCrop)
+        renameContainer = findViewById(R.id.renameContainer)
+        galleryRow = findViewById(R.id.galleryRow)
+        bottomActionArea = findViewById(R.id.bottomActionArea)
         etFileName = findViewById(R.id.etFileName)
         btnStepMinus = findViewById(R.id.btnStepMinus)
         btnStepPlus = findViewById(R.id.btnStepPlus)
@@ -295,7 +314,12 @@ class MainActivity : AppCompatActivity() {
     private fun setupListeners() {
         btnFlash.setOnClickListener { cycleFlashMode() }
         btnCapture.setOnClickListener { takePhoto() }
-        btnToggleFilter.setOnClickListener { toggleDocClearFilter() }
+        btnToggleFilter.setOnClickListener { cycleFilterMode() }
+
+        // On-Page Crop Listeners
+        btnOpenCrop.setOnClickListener { openCropMode() }
+        btnCancelCrop.setOnClickListener { closeCropMode() }
+        btnApplyCrop.setOnClickListener { applyCrop() }
 
         // In-App Update Button
         btnUpdateApp.setOnClickListener {
@@ -906,16 +930,12 @@ class MainActivity : AppCompatActivity() {
                             val back = cropped3x4
                             val collage = ImageProcessor.createTwoSidedCollage(front, back)
                             val scaledOriginal = ImageProcessor.resizeProportional(collage, 1800)
-                            val docClear = ImageProcessor.applyDocClearFilter(scaledOriginal, applySharpen = false)
 
                             runOnUiThread {
                                 capturedOriginalBitmap = scaledOriginal
-                                previewDocClearBitmap = docClear
-                                isDocClearActive = true
-
+                                currentFilterMode = FilterMode.SHADOW_CLEAR
+                                updatePreviewWithCurrentFilter()
                                 resetCollageState()
-                                updateFilterUI()
-                                imagePreview.setImageBitmap(previewDocClearBitmap)
 
                                 val counter = StorageHelper.getCurrentCounter(this@MainActivity)
                                 etFileName.setText(counter.toString())
@@ -929,15 +949,11 @@ class MainActivity : AppCompatActivity() {
 
                     // Single Page Normal Capture
                     val scaledOriginal = ImageProcessor.resizeProportional(cropped3x4, 1600)
-                    val docClear = ImageProcessor.applyDocClearFilter(scaledOriginal, applySharpen = false)
 
                     runOnUiThread {
                         capturedOriginalBitmap = scaledOriginal
-                        previewDocClearBitmap = docClear
-                        isDocClearActive = true
-
-                        updateFilterUI()
-                        imagePreview.setImageBitmap(previewDocClearBitmap)
+                        currentFilterMode = FilterMode.SHADOW_CLEAR
+                        updatePreviewWithCurrentFilter()
 
                         val counter = StorageHelper.getCurrentCounter(this@MainActivity)
                         etFileName.setText(counter.toString())
@@ -950,33 +966,84 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun toggleDocClearFilter() {
-        isDocClearActive = !isDocClearActive
+    private fun openCropMode() {
+        val original = capturedOriginalBitmap ?: return
+        cropView.setImageBitmap(original)
+        cropView.visibility = View.VISIBLE
+        imagePreview.visibility = View.GONE
+        cropActionArea.visibility = View.VISIBLE
+        bottomActionArea.visibility = View.GONE
+        renameContainer.visibility = View.GONE
+        galleryRow.visibility = View.GONE
+        btnOpenCrop.visibility = View.GONE
+        btnToggleFilter.visibility = View.GONE
+    }
+
+    private fun closeCropMode() {
+        cropView.visibility = View.GONE
+        imagePreview.visibility = View.VISIBLE
+        cropActionArea.visibility = View.GONE
+        bottomActionArea.visibility = View.VISIBLE
+        renameContainer.visibility = View.VISIBLE
+        galleryRow.visibility = View.VISIBLE
+        btnOpenCrop.visibility = View.VISIBLE
+        btnToggleFilter.visibility = View.VISIBLE
+    }
+
+    private fun applyCrop() {
+        val cropped = cropView.getCroppedBitmap()
+        if (cropped != null) {
+            capturedOriginalBitmap = cropped
+            updatePreviewWithCurrentFilter()
+            Toast.makeText(this, "✂️ Document cropped successfully!", Toast.LENGTH_SHORT).show()
+        }
+        closeCropMode()
+    }
+
+    private fun cycleFilterMode() {
+        currentFilterMode = when (currentFilterMode) {
+            FilterMode.SHADOW_CLEAR -> FilterMode.COLOR_CLEAR
+            FilterMode.COLOR_CLEAR -> FilterMode.ORIGINAL
+            FilterMode.ORIGINAL -> FilterMode.SHADOW_CLEAR
+        }
+        updatePreviewWithCurrentFilter()
+    }
+
+    private fun updatePreviewWithCurrentFilter() {
+        val original = capturedOriginalBitmap ?: return
         updateFilterUI()
 
-        val bmpToDisplay = if (isDocClearActive) {
-            previewDocClearBitmap ?: capturedOriginalBitmap
-        } else {
-            capturedOriginalBitmap
+        val filtered = when (currentFilterMode) {
+            FilterMode.SHADOW_CLEAR -> ImageProcessor.removeShadowsAndEnhance(original, preserveColor = false, sharpen = false)
+            FilterMode.COLOR_CLEAR -> ImageProcessor.removeShadowsAndEnhance(original, preserveColor = true, sharpen = false)
+            FilterMode.ORIGINAL -> original
         }
-        imagePreview.setImageBitmap(bmpToDisplay)
+        previewDocClearBitmap = filtered
+        imagePreview.setImageBitmap(previewDocClearBitmap)
     }
 
     private fun updateFilterUI() {
-        if (isDocClearActive) {
-            tvFilterStatus.text = getString(R.string.doc_clear_enabled)
-            tvFilterStatus.setTextColor(Color.WHITE)
-            ivMagicIcon.setColorFilter(Color.parseColor("#10B981"))
-            btnToggleFilter.setBackgroundResource(R.drawable.bg_pill_button)
-        } else {
-            tvFilterStatus.text = getString(R.string.doc_clear_disabled)
-            tvFilterStatus.setTextColor(Color.parseColor("#D1D5DB"))
-            ivMagicIcon.setColorFilter(Color.parseColor("#9CA3AF"))
-            btnToggleFilter.setBackgroundResource(R.drawable.bg_pill_button)
+        when (currentFilterMode) {
+            FilterMode.SHADOW_CLEAR -> {
+                tvFilterStatus.text = "Shadow Clear 🪄"
+                tvFilterStatus.setTextColor(Color.WHITE)
+                ivMagicIcon.setColorFilter(Color.parseColor("#10B981"))
+            }
+            FilterMode.COLOR_CLEAR -> {
+                tvFilterStatus.text = "Color Clear 🎨"
+                tvFilterStatus.setTextColor(Color.parseColor("#60A5FA"))
+                ivMagicIcon.setColorFilter(Color.parseColor("#60A5FA"))
+            }
+            FilterMode.ORIGINAL -> {
+                tvFilterStatus.text = "Original 📷"
+                tvFilterStatus.setTextColor(Color.parseColor("#D1D5DB"))
+                ivMagicIcon.setColorFilter(Color.parseColor("#9CA3AF"))
+            }
         }
     }
 
     private fun resetToCameraView() {
+        closeCropMode()
         previewOverlay.visibility = View.GONE
         capturedOriginalBitmap = null
         previewDocClearBitmap = null
@@ -996,10 +1063,10 @@ class MainActivity : AppCompatActivity() {
 
         processingExecutor.execute {
             try {
-                val finalProcessedBitmap = if (isDocClearActive) {
-                    ImageProcessor.applyDocClearFilter(original, applySharpen = true)
-                } else {
-                    original
+                val finalProcessedBitmap = when (currentFilterMode) {
+                    FilterMode.SHADOW_CLEAR -> ImageProcessor.removeShadowsAndEnhance(original, preserveColor = false, sharpen = true)
+                    FilterMode.COLOR_CLEAR -> ImageProcessor.removeShadowsAndEnhance(original, preserveColor = true, sharpen = true)
+                    FilterMode.ORIGINAL -> original
                 }
 
                 val maxDim = if (currentDocMode == DocumentMode.TWO_SIDED_RC) 1800 else 1600

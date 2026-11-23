@@ -64,6 +64,144 @@ object ImageProcessor {
     }
 
     /**
+     * Advanced Shadow Removal & Document Background Whitening (CamScanner style).
+     * Automatically detects and removes phone/hand shadows, lifts paper to pure white,
+     * and enhances black/blue ink, vehicle numbers, and stamps.
+     */
+    fun removeShadowsAndEnhance(
+        source: Bitmap,
+        preserveColor: Boolean = false,
+        sharpen: Boolean = true
+    ): Bitmap {
+        val w = source.width
+        val h = source.height
+
+        val srcPixels = IntArray(w * h)
+        source.getPixels(srcPixels, 0, w, 0, 0, w, h)
+
+        // 1. Grid-based background illumination estimation
+        val gridCols = 16
+        val gridRows = 16
+        val cellW = w.toFloat() / gridCols
+        val cellH = h.toFloat() / gridRows
+
+        val bgGrid = FloatArray(gridCols * gridRows)
+
+        for (gy in 0 until gridRows) {
+            for (gx in 0 until gridCols) {
+                val startX = (gx * cellW).toInt()
+                val endX = ((gx + 1) * cellW).toInt().coerceAtMost(w)
+                val startY = (gy * cellH).toInt()
+                val endY = ((gy + 1) * cellH).toInt().coerceAtMost(h)
+
+                var maxLum = 40f
+                var sumLum = 0f
+                var count = 0
+
+                val stepX = max(1, (endX - startX) / 10)
+                val stepY = max(1, (endY - startY) / 10)
+
+                for (y in startY until endY step stepY) {
+                    for (x in startX until endX step stepX) {
+                        val c = srcPixels[y * w + x]
+                        val r = (c shr 16) and 0xFF
+                        val g = (c shr 8) and 0xFF
+                        val b = c and 0xFF
+                        val lum = 0.299f * r + 0.587f * g + 0.114f * b
+                        if (lum > maxLum) maxLum = lum
+                        sumLum += lum
+                        count++
+                    }
+                }
+
+                val avgLum = if (count > 0) sumLum / count else 128f
+                val cellBg = (maxLum * 0.7f + avgLum * 0.3f).coerceIn(60f, 255f)
+                bgGrid[gy * gridCols + gx] = cellBg
+            }
+        }
+
+        // 2. Normalize pixels using bilinearly interpolated background map
+        val outPixels = IntArray(w * h)
+        val targetWhite = 245f
+
+        for (y in 0 until h) {
+            val gy = (y / cellH).coerceIn(0f, (gridRows - 1).toFloat())
+            val gy0 = gy.toInt()
+            val gy1 = (gy0 + 1).coerceAtMost(gridRows - 1)
+            val fy = gy - gy0
+
+            val yOffset = y * w
+
+            for (x in 0 until w) {
+                val gx = (x / cellW).coerceIn(0f, (gridCols - 1).toFloat())
+                val gx0 = gx.toInt()
+                val gx1 = (gx0 + 1).coerceAtMost(gridCols - 1)
+                val fx = gx - gx0
+
+                // Bilinear interpolation
+                val b00 = bgGrid[gy0 * gridCols + gx0]
+                val b10 = bgGrid[gy0 * gridCols + gx1]
+                val b01 = bgGrid[gy1 * gridCols + gx0]
+                val b11 = bgGrid[gy1 * gridCols + gx1]
+
+                val bTop = b00 + fx * (b10 - b00)
+                val bBot = b01 + fx * (b11 - b01)
+                val localBg = (bTop + fy * (bBot - bTop)).coerceAtLeast(30f)
+
+                val c = srcPixels[yOffset + x]
+                val r = (c shr 16) and 0xFF
+                val g = (c shr 8) and 0xFF
+                val b = c and 0xFF
+
+                if (preserveColor) {
+                    val scale = targetWhite / localBg
+                    val nr = (r * scale).toInt().coerceIn(0, 255)
+                    val ng = (g * scale).toInt().coerceIn(0, 255)
+                    val nb = (b * scale).toInt().coerceIn(0, 255)
+
+                    val cr = ((nr - 128) * 1.22f + 132).toInt().coerceIn(0, 255)
+                    val cg = ((ng - 128) * 1.22f + 132).toInt().coerceIn(0, 255)
+                    val cb = ((nb - 128) * 1.22f + 132).toInt().coerceIn(0, 255)
+
+                    outPixels[yOffset + x] = -0x1000000 or (cr shl 16) or (cg shl 8) or cb
+                } else {
+                    val lum = 0.299f * r + 0.587f * g + 0.114f * b
+                    val normalizedLum = (lum / localBg) * targetWhite
+
+                    val contrastLum = if (normalizedLum > 185) {
+                        255
+                    } else if (normalizedLum < 120) {
+                        (normalizedLum * 0.75f).toInt().coerceIn(0, 255)
+                    } else {
+                        val factor = (normalizedLum - 120) / 65f
+                        (90 + factor * 165).toInt().coerceIn(0, 255)
+                    }
+
+                    val maxColorDiff = maxOf(abs(r - g), abs(g - b), abs(b - r))
+                    if (maxColorDiff > 35) {
+                        val scale = targetWhite / localBg
+                        val nr = (r * scale * 1.1f).toInt().coerceIn(0, 255)
+                        val ng = (g * scale * 1.1f).toInt().coerceIn(0, 255)
+                        val nb = (b * scale * 1.1f).toInt().coerceIn(0, 255)
+                        outPixels[yOffset + x] = -0x1000000 or (nr shl 16) or (ng shl 8) or nb
+                    } else {
+                        outPixels[yOffset + x] = -0x1000000 or (contrastLum shl 16) or (contrastLum shl 8) or contrastLum
+                    }
+                }
+            }
+        }
+
+        val outBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        outBitmap.setPixels(outPixels, 0, w, 0, 0, w, h)
+
+        return if (sharpen && w >= 400 && h >= 400) {
+            applyLightSharpen(outBitmap)
+        } else {
+            outBitmap
+        }
+    }
+
+    /**
      * Crops bitmap to exact 3:4 aspect ratio (centered) to match the viewfinder box.
      */
     fun cropTo3x4(source: Bitmap): Bitmap {
